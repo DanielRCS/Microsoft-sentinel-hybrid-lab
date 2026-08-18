@@ -32,11 +32,9 @@ Current systems being used for this project:
 The Azure side of the lab currently includes:
 
 - Resource Group: `RG-SecurityLab`
-- Log Analytics Workspace: `LAW-SecurityLab`
+- Log Analytics Workspace: `law-securitygroup`
 - Microsoft Sentinel
 - Windows Security Events solution
-
-The next step is onboarding the Coffee Windows 10 VM through Azure Arc so that I can begin sending Windows Security and Sysmon telemetry to Microsoft Sentinel.
 
 ### Phase 1 - Windows Security Event Collection
 
@@ -62,7 +60,6 @@ Since I knew the source PC and I purposely generated the failed logins, I was ab
 
 This investigation helped me get more familiar with using KQL to search Windows Security Events and also showed me why it's important to look at more than just the failed login event before deciding if something is suspicious.
 
-Based on the event correlation and known source of the activity, I determined that the failed attempts were expected user activity rather than malicious authentication attempts.
 ## Current Progress
 
 - [x] Built XCP-ng home lab environment
