@@ -38,6 +38,31 @@ The Azure side of the lab currently includes:
 
 The next step is onboarding the Coffee Windows 10 VM through Azure Arc so that I can begin sending Windows Security and Sysmon telemetry to Microsoft Sentinel.
 
+### Phase 1 - Windows Security Event Collection
+
+I onboarded my COFFEE Windows 10 VM to Azure Arc so I could connect my local home lab to Azure and start sending logs to Microsoft Sentinel.
+
+I installed the Azure Monitor Agent (AMA) and created a Data Collection Rule (DCR) to collect Windows Security Events from COFFEE. I then used KQL in Sentinel to make sure the logs were actually coming in.
+
+I ran into a few problems while setting everything up. One of the main issues was that my lab network is blocked from accessing the internet by default. I had to create firewall rules to allow the Azure traffic I needed.
+
+I also ran into DNS and time sync issues. My domain controller wasn't able to reach an external NTP server, which caused the system time to be wrong and Azure authentication to fail. After fixing the firewall rules, DNS, and NTP, I was able to get COFFEE connected to Azure Arc and start receiving Windows Security Events in Sentinel.
+
+### Investigation #001 - Failed Logins
+
+For my first investigation, I purposely entered the wrong password several times on COFFEE so I could generate failed login events and then find them in Sentinel.
+
+Using KQL, I found five Event ID 4625 events for the `KINGDOM\IT.Admin` account. I looked through the events to find where the attempts came from, the logon type, and why the login failed.
+
+The attempts came from my main PC that I use to RDP into COFFEE. The events showed Logon Type 7 (Unlock), status `0xC000006D`, and substatus `0xC000006A`, which showed that the password entered was incorrect.
+
+I then searched for a successful login and found an Event ID 4624 for the same account and source IP.
+
+Since I knew the source PC and I purposely generated the failed logins, I was able to confirm that this was normal activity and not an actual attack.
+
+This investigation helped me get more familiar with using KQL to search Windows Security Events and also showed me why it's important to look at more than just the failed login event before deciding if something is suspicious.
+
+Based on the event correlation and known source of the activity, I determined that the failed attempts were expected user activity rather than malicious authentication attempts.
 ## Current Progress
 
 - [x] Built XCP-ng home lab environment
@@ -47,10 +72,10 @@ The next step is onboarding the Coffee Windows 10 VM through Azure Arc so that I
 - [x] Created Log Analytics Workspace
 - [x] Enabled Microsoft Sentinel
 - [x] Installed Windows Security Events solution
-- [ ] Onboard Coffee to Azure Arc
-- [ ] Configure Azure Monitor Agent
-- [ ] Send Windows Security Events to Sentinel
+- [x] Onboard Coffee to Azure Arc
+- [x] Configure Azure Monitor Agent
+- [x] Send Windows Security Events to Sentinel
 - [ ] Send Sysmon telemetry to Sentinel
-- [ ] Verify telemetry using KQL
+- [x] Verify telemetry using KQL
 - [ ] Create first custom detection
 - [ ] Investigate first Sentinel incident
