@@ -60,6 +60,28 @@ Since I knew the source PC and I purposely generated the failed logins, I was ab
 
 This investigation helped me get more familiar with using KQL to search Windows Security Events and also showed me why it's important to look at more than just the failed login event before deciding if something is suspicious.
 
+## Detection & Incident Response
+
+### Multiple Failed Logons
+
+Created a custom Microsoft Sentinel detection for repeated failed logon attempts against the same account.
+
+The rule monitors Windows Security Event ID 4625 and triggers when an account has five or more failed logons within a five-minute window. The alert includes the affected account, device, failed logon count, and attempt timestamps.
+
+I tested the rule using repeated failed RDP authentication attempts against the COFFEE endpoint. Sentinel generated a Medium-severity Credential Access incident, which I investigated using Event IDs 4625 and 4624.
+
+The investigation identified:
+- Source IP of the authentication attempts
+- Logon Type 10 (RemoteInteractive/RDP)
+- Incorrect password failures
+- No successful authentication after the attempts
+
+The source was verified as known lab activity, and the incident was closed as benign.
+
+[View detection logic](detections/multiple-failed-logons.md)
+
+[View full incident investigation](investigations/investigation-004-failed-rdp-detection.md)
+
 ## Current Progress
 
 - [x] Built XCP-ng home lab environment
@@ -69,10 +91,10 @@ This investigation helped me get more familiar with using KQL to search Windows 
 - [x] Created Log Analytics Workspace
 - [x] Enabled Microsoft Sentinel
 - [x] Installed Windows Security Events solution
-- [x] Onboard Coffee to Azure Arc
-- [x] Configure Azure Monitor Agent
+- [x] Onboarded COFFEE to Azure Arc
+- [x] Configured Azure Monitor Agent
 - [x] Send Windows Security Events to Sentinel
-- [ ] Send Sysmon telemetry to Sentinel
+- [x] Send Sysmon telemetry to Sentinel
 - [x] Verify telemetry using KQL
-- [ ] Create first custom detection
-- [ ] Investigate first Sentinel incident
+- [x] Create first custom detection
+- [x] Investigate first Sentinel incident
