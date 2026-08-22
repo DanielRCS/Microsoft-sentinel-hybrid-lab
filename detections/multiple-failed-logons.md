@@ -27,3 +27,37 @@ SecurityEvent
     LastAttempt = max(TimeGenerated)
     by Account, Computer, HostName, DnsDomain, AccountName, AccountDomain
 | where FailedLogons >= 5
+```
+
+## Rule Configuration
+
+- Severity: Medium
+- Frequency: Every 5 minutes
+- Lookback: 5 minutes
+- Threshold: 5 or more failed logons
+- MITRE ATT&CK: T1110.001 - Password Guessing
+
+## Entity Mapping
+
+**Device**
+
+- HostName
+- DNS Domain
+
+This allows the alert to associate the activity with the affected Windows endpoint.
+
+## Alert Details
+
+The alert includes:
+
+- Affected account
+- Affected computer
+- Number of failed logons
+- First failed attempt
+- Last failed attempt
+
+## Testing
+
+The rule was tested by generating five failed RDP authentication attempts against the COFFEE endpoint.
+
+The detection successfully triggered and generated a Medium-severity Credential Access incident in Microsoft Sentinel.
