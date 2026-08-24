@@ -109,8 +109,8 @@ The investigation included reviewing:
 - Failed logon count
 - Whether a successful authentication followed the attempts.
 
-[View Detection logic] (detections/multiple-failed-logons.md)
-[View full incident investigation] (investigations/investigation-004-failed-rdp-detection.md)
+[View Detection logic](detections/multiple-failed-logons.md)
+[View full incident investigation](investigations/investigation-004-failed-rdp-detection.md)
 
 ---
 
