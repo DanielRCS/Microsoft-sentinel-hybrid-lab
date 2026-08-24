@@ -6,95 +6,193 @@ This project is my hands-on lab for learning Microsoft Sentinel and getting more
 
 I already have a home lab running on a Dell PowerEdge T630 with XCP-ng, Active Directory, Windows endpoints, Sysmon, and several security tools. Instead of creating a completely separate environment in Azure, I'm connecting my existing lab to Microsoft Sentinel and using it as a simulated business and security testing environment.
 
-I'll be using the lab to practice collecting and analyzing security logs, writing KQL queries, creating detections, investigating alerts, and working through different security scenarios.
+The main goals of this project are to:
+- Collect and analyze Windows security logs
+- Practice writing KQL queries
+- Investigate alerts and incidents
+- Work with Active Directory security events
+- Practice correlating multiple events together
+- Build out more realistic attack and investigation scenarios
 
-The rest of my XCP-ng lab includes Kali Linux, Security Onion, Splunk, a file server, and a Terraform controller. I plan to use some of these systems later as I expand the Sentinel lab and work through different security monitoring and attack simulation scenarios.
+This lab also supports my preparation for the Blue Team Level 1 (BTL1) exam by giving me hands-on practice with areas such as SIEM investigation, Windows event anaylsis, incident response, log anaylsis, and identifying suspicious activity. Instead of only studying the concepts, I  can use this environment to practice them in a working lab.
 
-As I build out the environment, I'll document what I configure, problems I run into, KQL queries I create, and the investigations I complete.
+This repository documents the lab architecture, detection logic, and investigations I complete as I continue building out the environment.
 
-## Lab Architecture
+---
 
+## Lab Architecure
 ### On-Premises Environment
-The local lab is hosted on a Dell PowerEdge T630 running XCP-ng with Xen Orchestra (XOA) for virtualization.
 
-Current systems being used for this project:
+The local lab is hosted on a Dell PowerEdge T630 running XCP-ng with Xen Orchestra for virtualization.
+Systems currently used for the Sentinel lab include:
 
-- **Rose - Windows Server 2019**
-  - Active Directory Domain Services
-  - DNS
-  - Sysmon
+### ROSE - Windows Server 2019
+- Active Directory Domain Services
+- DNS
+- Domain Controller
+- Windows Security Event logging
+- Azure Arc connected
 
-- **Coffee - Windows 10 Victim**
-  - Domain joined
-  - Sysmon
-  
-### Azure Environment
+### COFFEE - Windows 10 
+- Domain joined
+- Sysmon
+- Windows Security Event logging
+- Azure Arc connected
+- Used as the main endpoint for testing authentication and endpoint activity
+
+This lab network is separate from my main network using OPNsense. Outbound access is restricted and only opened when needed for Azure services and lab testing.
+
+---
+
+## Azure Environment
+
 The Azure side of the lab currently includes:
-
-- Resource Group: `RG-SecurityLab`
-- Log Analytics Workspace: `law-securitygroup`
 - Microsoft Sentinel
-- Windows Security Events solution
+- Log Analytics Workspace
+- Azure Arc
+- Azure Monitor Agent
+- Windows Security Events
+- Data Collection rules
 
-### Phase 1 - Windows Security Event Collection
+Windows security Events from ROSE and COFFEE are being sent into Sentinel for monitoring and investigation.
+Sysmon telemetry from COFFEE is also being collected for additional endpoint visibility.
 
-I onboarded my COFFEE Windows 10 VM to Azure Arc so I could connect my local home lab to Azure and start sending logs to Microsoft Sentinel.
+---
 
-I installed the Azure Monitor Agent (AMA) and created a Data Collection Rule (DCR) to collect Windows Security Events from COFFEE. I then used KQL in Sentinel to make sure the logs were actually coming in.
+## Technologies Used
+- **Microsoft Sentinel** - Microsoft's cloud SIEM used to collect, search, detect, and investigate security activity.
+- **KQL** - Query language used to search and analyze logs in Microsoft Sentinel and Log Analytics.
+- **Azure Arc** - Connects machines outside of Azure to Azure so they can be managed and monitored.
+- **Azure Monitor Agent (AMA)** - Agent installed on system that sends logs and monitoring data to Azure.
+- **Log Analytics Workspace** - Central location in Azure where collected log data is stored and queried.
+- **Data Collection Rule (DCR)** - Defines what logs Azure Monitor Agent should collect and where to send them.
+- **Windows Security Events** - Windows audit logs that record activity such as logons, account changes, and process creation.
+- **Active Directory** - Microsoft directory service used to manage domain users, computers, groups, and authentication.
+- **Windows Server 2019** - Server operating system used for my domain controller, Active Directory, and DNS.
+- **Windows 10** - Domain-joined endpoint used for testing logons, processes, and other security activity.
+- **Sysmon** - Windows monitoring tool that provides more detailed endpoint activity than standard Windows logs.
+- **XCP-ng** - Hypervisor that runs the virtual machines in my home lab.
+- **Xen Orchestra** - Web interface used to manage my XCP-ng virtual machines.
+- **OPNsense** - Firewall/router used to separate and control network traffic in the lab.
 
-I ran into a few problems while setting everything up. One of the main issues was that my lab network is blocked from accessing the internet by default. I had to create firewall rules to allow the Azure traffic I needed.
+## Security Monitoring
+### Windows Security Events
 
-I also ran into DNS and time sync issues. My domain controller wasn't able to reach an external NTP server, which caused the system time to be wrong and Azure authentication to fail. After fixing the firewall rules, DNS, and NTP, I was able to get COFFEE connected to Azure Arc and start receiving Windows Security Events in Sentinel.
+I configured Windows Security Event collection from both the domain controllers and Windows endpoint.
+This gives visibility into activity such as:
+- Successful and failed logons
+- Process creation
+- Account creation and deletion
+- Password changes
+- Account lockouts
+- Privileged logons
+- Active Directory group membership changes
 
-### Investigation #001 - Failed Logins
-
-For my first investigation, I purposely entered the wrong password several times on COFFEE so I could generate failed login events and then find them in Sentinel.
-
-Using KQL, I found five Event ID 4625 events for the `KINGDOM\IT.Admin` account. I looked through the events to find where the attempts came from, the logon type, and why the login failed.
-
-The attempts came from my main PC that I use to RDP into COFFEE. The events showed Logon Type 7 (Unlock), status `0xC000006D`, and substatus `0xC000006A`, which showed that the password entered was incorrect.
-
-I then searched for a successful login and found an Event ID 4624 for the same account and source IP.
-
-Since I knew the source PC and I purposely generated the failed logins, I was able to confirm that this was normal activity and not an actual attack.
-
-This investigation helped me get more familiar with using KQL to search Windows Security Events and also showed me why it's important to look at more than just the failed login event before deciding if something is suspicious.
+## Sysmon
+Sysmon is also running on the Windows systems to provide more detailed endpoint telemtry.
+I created reusable KQL queries for common Sysmon activity including:
+- Process creation
+- DNS queries
+- File creation
+- Network connections
+- Registry changes
 
 ## Detection & Incident Response
-
 ### Multiple Failed Logons
+Created a custom Microsoft Sentinel detection for repeated failed authentication attempts against the same account.
+The rule monitors Windows Security Event ID 4625 and triggers when an account received five or more failed logons within a five-minute window.
+I tested the detection using controlled failed RDP authentication attempts against the COFFEE endpoint. Sentinel generated a Medium-severity incident, which I investigated using Windows authentication events.
+The investigation included reviewing:
+- Source IP
+- Logon type
+- Failure reason
+- Failed logon count
+- Whether a successful authentication followed the attempts.
 
-Created a custom Microsoft Sentinel detection for repeated failed logon attempts against the same account.
+[View Detection logic] (detections/multiple-failed-logons.md)
+[View full incident investigation] (investigations/investigation-004-failed-rdp-detection.md)
 
-The rule monitors Windows Security Event ID 4625 and triggers when an account has five or more failed logons within a five-minute window. The alert includes the affected account, device, failed logon count, and attempt timestamps.
+---
 
-I tested the rule using repeated failed RDP authentication attempts against the COFFEE endpoint. Sentinel generated a Medium-severity Credential Access incident, which I investigated using Event IDs 4625 and 4624.
+### New Account Added to Domain Admins
+Created a correlated detection that identified when a newly created Active Directory account is added to the 'Domain Admins' group shortly after creation.
+The detection uses:
+- Event ID 4720 - Account created
+- Event ID 4728 - Member added to a security-enabled global group
 
-The investigation identified:
-- Source IP of the authentication attempts
-- Logon Type 10 (RemoteInteractive/RDP)
-- Incorrect password failures
-- No successful authentication after the attempts
+The first version of the query correlated events using only the domain controller, which caused duplicated matches.
 
-The source was verified as known lab activity, and the incident was closed as benign.
+I improved the rule by correlating the 'TargetSid' from the account creation event with the 'MemberSid' from the Domain Admins event. This made sure the detection was matching the exact same account across both events.
 
-[View detection logic](detections/multiple-failed-logons.md)
+The final rule detects when the same newly created account is added to Domain Admins within ten minutes of being created.
+The Lab test successfully generated a High-severity privilege escalation incident.
 
-[View full incident investigation](investigations/investigation-004-failed-rdp-detection.md)
+[View detection logic](detections/new-account-added-to-domain-admins.md)
+[View full incident investigation](investigation/investigation-005-new-account-domain-admin.md)
 
-## Current Progress
+---
 
-- [x] Built XCP-ng home lab environment
-- [x] Configured Active Directory domain environment
-- [x] Installed Sysmon on Windows lab systems
-- [x] Created Azure resource group
-- [x] Created Log Analytics Workspace
-- [x] Enabled Microsoft Sentinel
-- [x] Installed Windows Security Events solution
-- [x] Onboarded COFFEE to Azure Arc
-- [x] Configured Azure Monitor Agent
-- [x] Send Windows Security Events to Sentinel
-- [x] Send Sysmon telemetry to Sentinel
-- [x] Verify telemetry using KQL
-- [x] Create first custom detection
-- [x] Investigate first Sentinel incident
+## Investigation Practice
+Along with building detections, I have been using Sentinel to practice investigating activity manually.
+Some of the activity I have investigated includes:
+- Failed authentication attempts
+- RDP logon
+- Windows process creation
+- Powershell activity
+- Basic system discovery commands
+- Active Directory account creation
+- Password resets
+- Account enable and disable activity
+- Privileged group membership changes
+- Account deletion
+
+One of the main things I have been focusing on is not relying on a single event when deciding whether activity is suspicious.
+
+For example, a failed logon by itself does not give the full picture. I also check the source IP, logon type, surrounding authentication events, process activity, and whether a successful authentication happened afterward.
+
+---
+
+## Capabilities Implemented
+So far, I have:
+- Built and connected a hybrid Sentinel lab
+- Connected on-premises Windows systems using Azure Arc
+- Configured Azure Monitor Agent
+- Sent Windows Security Events into Sentinel
+- Sent Sysmon telemetry into Sentinel
+- Written reusable KQL hunting queries
+- Created custom scheduled detections
+- Mapped detections to MITRE ATT&CK
+- Generated test security events
+- Investigated Sentinel incidents
+- Investigated Active Directory activity
+- Correlated multiple security events using SIDs
+- Improved detection logic after finding false correlations
+
+---
+
+## Current Lab Scenario
+I am currently working on moving away from isolated event testing and building a more complete security investigation scenario.
+
+The current scenario includes:
+1. Creating a normal domain account
+2. Authentication attempts against a Windows endpoint
+3. Successful RDP access
+4. System discovery activity
+5. Reviewing the activity in Sentinel
+6. Continuing the scenario into additional suspicious behavior and privilege-related activity
+
+The goal is to eventually investigate the full chain instead of treating each event as a separate exercise.
+
+---
+
+## Future Development
+As I continue building the lab, I plan to add:
+- Multi-stage attack simulations
+- Kali Linux testing
+- Atomic Red Team-style simulations
+- Additional Sentinel detections
+- More Active Directory monitoring
+- Terraform / Infrastructure as Code
+- Comparison of the same security activity across Sentinel, Splunk, and Security Onion
+
+The goal is to keep improving the lab into something closer to a small real-world security monitoring environment.
