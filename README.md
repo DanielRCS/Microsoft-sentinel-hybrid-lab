@@ -20,7 +20,7 @@ This repository documents the lab architecture, detection logic, and investigati
 
 ---
 
-## Lab Architecure
+## Lab Architecture
 ### On-Premises Environment
 
 The local lab is hosted on a Dell PowerEdge T630 running XCP-ng with Xen Orchestra for virtualization.
@@ -90,7 +90,7 @@ This gives visibility into activity such as:
 - Privileged logons
 - Active Directory group membership changes
 
-## Sysmon
+### Sysmon
 Sysmon is also running on the Windows systems to provide more detailed endpoint telemetry.
 I created reusable KQL queries for common Sysmon activity including:
 - Process creation
