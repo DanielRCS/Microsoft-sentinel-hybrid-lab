@@ -14,7 +14,7 @@ The main goals of this project are to:
 - Practice correlating multiple events together
 - Build out more realistic attack and investigation scenarios
 
-This lab also supports my preparation for the Blue Team Level 1 (BTL1) exam by giving me hands-on practice with areas such as SIEM investigation, Windows event anaylsis, incident response, log anaylsis, and identifying suspicious activity. Instead of only studying the concepts, I  can use this environment to practice them in a working lab.
+This lab also supports my preparation for the Blue Team Level 1 (BTL1) exam by giving me hands-on practice with areas such as SIEM investigation, Windows event analysis, incident response, log analysis, and identifying suspicious activity. Instead of only studying the concepts, I  can use this environment to practice them in a working lab.
 
 This repository documents the lab architecture, detection logic, and investigations I complete as I continue building out the environment.
 
@@ -25,6 +25,8 @@ This repository documents the lab architecture, detection logic, and investigati
 
 The local lab is hosted on a Dell PowerEdge T630 running XCP-ng with Xen Orchestra for virtualization.
 Systems currently used for the Sentinel lab include:
+
+![Lab Architecture](images/lab-architecture.png)
 
 ### ROSE - Windows Server 2019
 - Active Directory Domain Services
@@ -89,7 +91,7 @@ This gives visibility into activity such as:
 - Active Directory group membership changes
 
 ## Sysmon
-Sysmon is also running on the Windows systems to provide more detailed endpoint telemtry.
+Sysmon is also running on the Windows systems to provide more detailed endpoint telemetry.
 I created reusable KQL queries for common Sysmon activity including:
 - Process creation
 - DNS queries
@@ -109,6 +111,8 @@ The investigation included reviewing:
 - Failed logon count
 - Whether a successful authentication followed the attempts.
 
+![Multiple Failed Logons Incident](images/failed-logons-incident.png)
+
 [View Detection logic](detections/multiple-failed-logons.md)
 [View full incident investigation](investigations/investigation-004-failed-rdp-detection.md)
 
@@ -126,6 +130,12 @@ I improved the rule by correlating the 'TargetSid' from the account creation eve
 
 The final rule detects when the same newly created account is added to Domain Admins within ten minutes of being created.
 The Lab test successfully generated a High-severity privilege escalation incident.
+
+![New Account Added to Domain Admins Incident](images/domain-admin-incident.png)
+
+The detection correlates the account creation and Domain Admin membership events using the account SID.
+
+![SID Correlation Result](images/sid-correlation.png)
 
 [View detection logic](detections/new-account-added-to-domain-admins.md)
 [View full incident investigation](investigation/investigation-005-new-account-domain-admin.md)
